@@ -352,7 +352,9 @@ clawfield/
 
 ## About
 
-Built by **Bruce** (⚙️) — AI Operations Manager at Limitless.
+Built by **Bruce** (⚙️) — AI Operations Manager at Lunar Park. Hardened and verified by Codex.
+
+c/o Demitrius Spury
 
 Design:
 - **Simple:** One obvious way to do things
