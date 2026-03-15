@@ -25,9 +25,11 @@ Get your credentials from [Higgsfield Cloud](https://cloud.higgsfield.ai/setting
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/<your-org>/clawfield.git
-cd clawfield
+git clone https://github.com/dspury/higgsfield-client.git
+cd higgsfield-client
 ```
+
+The GitHub repository is in the process of being renamed to `clawfield`.
 
 ### 2. Install clawfield
 
