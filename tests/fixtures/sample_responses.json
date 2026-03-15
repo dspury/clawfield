@@ -1,0 +1,36 @@
+{
+  "generation_accepted": {
+    "status": "accepted",
+    "request_id": "test-request-123456",
+    "status_url": "https://api.higgsfield.ai/v1/requests/test-request-123456/status"
+  },
+  "generation_completed": {
+    "status": "completed",
+    "request_id": "test-request-123456",
+    "images": [
+      {
+        "url": "https://cdn.example.com/generated/test-image-123456.png",
+        "width": 1280,
+        "height": 720
+      }
+    ]
+  },
+  "generation_failed": {
+    "status": "failed",
+    "request_id": "test-request-123456",
+    "error": "Content policy violation"
+  },
+  "generation_queued": {
+    "status": "queued",
+    "request_id": "test-request-123456",
+    "position": 5
+  },
+  "invalid_model_422": {
+    "error": "Model not found",
+    "detail": "The specified model does not exist"
+  },
+  "rate_limit_429": {
+    "error": "Rate limit exceeded",
+    "retry_after": 60
+  }
+}
