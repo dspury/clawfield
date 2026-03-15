@@ -47,14 +47,19 @@ class ClawfieldSkill:
         self,
         api_key: Optional[str] = None,
         api_secret: Optional[str] = None,
+        credential_key: Optional[str] = None,
         output_dir: Optional[Path] = None,
     ):
         """
         Initialize skill.
-        Loads credentials from args or env (HF_API_KEY, HF_API_SECRET).
+        Loads credentials from args or env (HF_KEY or HF_API_KEY/HF_API_SECRET).
         """
         # Validate credentials (raises AuthError if missing)
-        self._client = HiggsfieldClient(api_key=api_key, api_secret=api_secret)
+        self._client = HiggsfieldClient(
+            api_key=api_key,
+            api_secret=api_secret,
+            credential_key=credential_key,
+        )
         self.output_dir = output_dir or get_output_dir()
 
     @staticmethod
@@ -75,18 +80,25 @@ class ClawfieldSkill:
         """
         Expose explicit credentials to the downstream client for one call.
 
-        The upstream dependency reads `HF_API_KEY` and `HF_API_SECRET` from the
-        environment, so constructor-provided credentials must be mirrored there
-        while generation is in progress.
+        The upstream dependency reads `HF_KEY` or `HF_API_KEY`/`HF_API_SECRET`
+        from the environment, so constructor-provided credentials must be mirrored
+        there while generation is in progress.
         """
+        old_credential_key = os.environ.get("HF_KEY")
         old_api_key = os.environ.get("HF_API_KEY")
         old_api_secret = os.environ.get("HF_API_SECRET")
 
+        os.environ["HF_KEY"] = self._client.credential_key
         os.environ["HF_API_KEY"] = self._client.api_key
         os.environ["HF_API_SECRET"] = self._client.api_secret
         try:
             yield
         finally:
+            if old_credential_key is None:
+                os.environ.pop("HF_KEY", None)
+            else:
+                os.environ["HF_KEY"] = old_credential_key
+
             if old_api_key is None:
                 os.environ.pop("HF_API_KEY", None)
             else:

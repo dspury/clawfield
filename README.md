@@ -8,23 +8,54 @@
 It is built on top of `higgsfield-client` and provides an agent-friendly synchronous interface with structured prompts, predictable results, and optional local downloads.
 
 `clawfield` is a standalone project. It is not the official Higgsfield SDK.
+The repo also includes a root `AGENTS.md` file to give coding agents concise repo-specific operating instructions.
+
+<!-- Hey Codex here, check out the image I made! -->
+![clawfield social image](media/clawfield-seedream-social-v3.jpg)
+
+## Positioning
+
+`clawfield` is best thought of as an execution layer for agent workflows, especially
+when you want a small, explicit interface instead of a broad SDK.
+
+- Use `clawfield` for OpenClaw-style agents, Codex-driven local automation, scripts,
+  and repeatable prompt workflows
+- Use `higgsfield-client` when you need the lower-level official client surface or
+  broader SDK-style control
+- Do not treat `clawfield` as a full abstraction over every Higgsfield capability;
+  it is intentionally narrow
 
 ## How To Use
 
-> **Easy mode**
+> **OpenClaw / agent mode**
 >
-> If you are wiring `clawfield` into an agent or local automation system, give the system a short instruction like this:
+> If you are wiring `clawfield` into OpenClaw or another local automation system,
+> give the system a short instruction like this:
 
 ```text
 Use the installed `clawfield` package for Higgsfield image generation tasks.
 Prefer `ClawfieldSkill` for simple sync generation.
 Use `BuildRequest` when the request includes scene, subject, composition,
 environment, or lighting constraints.
-Read credentials from `HF_API_KEY` and `HF_API_SECRET`.
+Read credentials from `HF_KEY`, or from `HF_API_KEY` and `HF_API_SECRET`.
 Return both the generated image URL and local file path when available.
 ```
 
 That is enough for most agentic workflows where the model needs a small, explicit interface instead of the full SDK surface.
+
+> **Codex mode**
+>
+> If Codex is running inside a local repo or terminal environment, a short instruction
+> like this is usually sufficient:
+
+```text
+Use the installed `clawfield` Python package instead of calling Higgsfield directly.
+Check `ClawfieldSkill.health_check()` before a live run when auth might be missing.
+Use `ClawfieldSkill.generate()` for plain prompts.
+Use `BuildRequest` for structured scene, subject, composition, environment, or lighting input.
+Assume live generation only works when `HF_KEY`, or `HF_API_KEY` and `HF_API_SECRET`, plus outbound network access are available.
+Return the remote image URL and local file path when a download succeeds.
+```
 
 > **Advanced mode**
 >
@@ -47,10 +78,19 @@ That is enough for most agentic workflows where the model needs a small, explici
 ## What It Covers
 
 - Credential loading from environment variables or constructor arguments
+- Support for either `HF_KEY` or `HF_API_KEY` + `HF_API_SECRET`
 - Simple synchronous generation via `ClawfieldSkill.generate()`
 - Structured prompt composition with `BuildRequest`
 - Convenience helpers for profile images and thumbnails
 - Optional file downloads through `HF_OUTPUT_DIR` or a supplied output path
+
+## What It Is Not
+
+- Not the official Higgsfield SDK
+- Not a general-purpose wrapper over the full upstream surface
+- Not an async job orchestration framework
+- Not a guarantee that a given agent runner can reach Higgsfield; live generation still
+  depends on credentials, package installation, filesystem access, and network access
 
 ## Relationship To `higgsfield-client`
 
@@ -97,13 +137,58 @@ export HF_API_KEY="your-key-here"
 export HF_API_SECRET="your-secret-here"
 ```
 
+You can also use the combined upstream credential format:
+
+```bash
+export HF_KEY="your-key-here:your-secret-here"
+```
+
 Optional environment variables:
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `HF_API_KEY` | Yes | — | Higgsfield API key |
-| `HF_API_SECRET` | Yes | — | Higgsfield API secret |
+| `HF_KEY` | Yes, unless using split credentials | — | Combined Higgsfield credential in `<api_key>:<api_secret>` format |
+| `HF_API_KEY` | Yes, unless using `HF_KEY` | — | Higgsfield API key |
+| `HF_API_SECRET` | Yes, unless using `HF_KEY` | — | Higgsfield API secret |
 | `HF_OUTPUT_DIR` | No | `./assets` | Download directory for generated images |
+
+Constructor arguments follow the same rule:
+
+- pass `api_key=` and `api_secret=` as separate values, or
+- pass `credential_key="api_key:api_secret"` as the combined form
+
+## Using From Codex
+
+Yes, Codex can use `clawfield` in the same way any local Python automation can,
+provided the runtime environment is prepared correctly.
+
+For live image generation, Codex needs all of the following:
+
+- the `clawfield` package installed in the active Python environment
+- valid `HF_KEY` or `HF_API_KEY` / `HF_API_SECRET` credentials
+- permission to write to the chosen output directory
+- outbound network access to the Higgsfield service
+
+Two practical notes:
+
+- `health_check()` only confirms local auth configuration. It does not prove that a
+  live generation request will succeed end to end.
+- Some Codex environments run with restricted network access. In those environments,
+  the package can still be imported and instructed correctly, but live image
+  generation may be blocked by the runtime rather than by `clawfield` itself.
+
+## Agent Instructions
+
+If you need a compact system instruction for an agent runner, this is a good default:
+
+```text
+Use the installed `clawfield` package for Higgsfield image generation work.
+Prefer `ClawfieldSkill.generate()` for simple prompts and `BuildRequest` for structured prompts.
+Read auth from `HF_KEY`, or from `HF_API_KEY` and `HF_API_SECRET`.
+Run `health_check()` when auth may be missing, but do not treat it as proof that live generation works.
+Return the remote image URL and local file path when generation succeeds.
+Do not claim a model or aspect ratio works unless a live run actually returned the expected output.
+```
 
 ## Quick Start
 
@@ -189,6 +274,16 @@ request = SimpleRequest(
 result = skill.generate(request)
 ```
 
+### Combined Credential Usage
+
+```python
+from clawfield import ClawfieldSkill
+
+skill = ClawfieldSkill(
+    credential_key="your-api-key:your-api-secret",
+)
+```
+
 ## Structured Prompts
 
 Use `BuildRequest` when you want consistent framing and lighting:
@@ -249,11 +344,30 @@ except ClawfieldError as exc:
     print(f"Generation failed: {exc}")
 ```
 
+## Model Notes
+
+Model support is ultimately determined by the Higgsfield account and the upstream
+application endpoint, not by `clawfield` itself.
+
+Observed live constraints during local testing:
+
+- `bytedance/seedream/v4/text-to-image` accepted `2K` output but rejected `720p`
+- Seedream accepted the documented aspect ratio values at request time, but the
+  returned image dimensions did not always honor the requested ratio in practice
+- `higgsfield-ai/soul/standard` successfully returned a true `16:9` image during
+  local validation
+- If exact widescreen output matters, `higgsfield-ai/soul/standard` is the safer
+  choice based on current local verification
+
+If you are trying a new application slug, start with a minimal prompt and the
+model's documented aspect ratio and resolution options before assuming a wrapper bug.
+
 ## Design Goals
 
 - Keep the public API small
 - Favor explicit behavior over hidden abstraction
 - Make agent and script integration straightforward
+- Stay opinionated toward OpenClaw-style and Codex-friendly local execution
 - Stay easy to understand and easy to remove if you outgrow it
 
 ## Development

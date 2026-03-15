@@ -11,13 +11,13 @@ class TestAuth:
     def test_raises_without_credentials(self):
         """Should raise AuthError when no creds provided."""
         # Ensure env is clean
-        for key in ["HF_API_KEY", "HF_API_SECRET"]:
+        for key in ["HF_KEY", "HF_API_KEY", "HF_API_SECRET"]:
             os.environ.pop(key, None)
         
         with pytest.raises(AuthError) as exc_info:
             HiggsfieldClient()
         
-        assert "HF_API_KEY" in str(exc_info.value)
+        assert "HF_KEY" in str(exc_info.value)
     
     def test_accepts_explicit_credentials(self):
         """Should accept credentials via constructor."""
@@ -38,6 +38,16 @@ class TestAuth:
         
         assert client.api_key == "env-key-789"
         assert client.api_secret == "env-secret-abc"
+
+    def test_loads_combined_hf_key_from_environment(self, monkeypatch):
+        """Should parse the upstream combined HF_KEY environment variable."""
+        monkeypatch.setenv("HF_KEY", "combined-key:combined-secret")
+
+        client = HiggsfieldClient()
+
+        assert client.api_key == "combined-key"
+        assert client.api_secret == "combined-secret"
+        assert client.credential_key == "combined-key:combined-secret"
     
     def test_explicit_overrides_environment(self, monkeypatch):
         """Constructor args should override environment."""
@@ -50,6 +60,23 @@ class TestAuth:
         )
         
         assert client.api_key == "explicit-key"
+
+    def test_accepts_explicit_combined_credential_key(self):
+        """Constructor should accept the combined credential string."""
+        client = HiggsfieldClient(credential_key="explicit-key:explicit-secret")
+
+        assert client.api_key == "explicit-key"
+        assert client.api_secret == "explicit-secret"
+        assert client.credential_key == "explicit-key:explicit-secret"
+
+    def test_rejects_malformed_hf_key(self, monkeypatch):
+        """Malformed combined credentials should fail clearly."""
+        monkeypatch.setenv("HF_KEY", "missing-secret")
+
+        with pytest.raises(AuthError) as exc_info:
+            HiggsfieldClient()
+
+        assert "HF_KEY must be formatted" in str(exc_info.value)
 
 
 class TestHealthCheck:

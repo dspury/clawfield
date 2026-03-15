@@ -81,7 +81,12 @@ class TestSkillGeneration:
 
     def test_generate_restores_environment_credentials(self, monkeypatch, tmp_path):
         """Temporary credentials should not leak after generation completes."""
-        skill = ClawfieldSkill(api_key="explicit-key", api_secret="explicit-secret", output_dir=tmp_path)
+        skill = ClawfieldSkill(
+            api_key="explicit-key",
+            api_secret="explicit-secret",
+            output_dir=tmp_path,
+        )
+        monkeypatch.setenv("HF_KEY", "original-key:original-secret")
         monkeypatch.setenv("HF_API_KEY", "original-key")
         monkeypatch.setenv("HF_API_SECRET", "original-secret")
 
@@ -90,6 +95,7 @@ class TestSkillGeneration:
         def fake_subscribe(model, arguments):
             import os
 
+            captured["credential_key"] = os.environ.get("HF_KEY")
             captured["api_key"] = os.environ.get("HF_API_KEY")
             captured["api_secret"] = os.environ.get("HF_API_SECRET")
             return {"images": [{"url": "https://example.com/image.png"}]}
@@ -99,6 +105,38 @@ class TestSkillGeneration:
 
         skill.generate("test prompt")
 
-        assert captured == {"api_key": "explicit-key", "api_secret": "explicit-secret"}
+        assert captured == {
+            "credential_key": "explicit-key:explicit-secret",
+            "api_key": "explicit-key",
+            "api_secret": "explicit-secret",
+        }
+        assert __import__("os").environ["HF_KEY"] == "original-key:original-secret"
         assert __import__("os").environ["HF_API_KEY"] == "original-key"
         assert __import__("os").environ["HF_API_SECRET"] == "original-secret"
+
+    def test_generate_with_explicit_credential_key(self, monkeypatch, tmp_path):
+        """Combined credentials should work through the skill surface."""
+        skill = ClawfieldSkill(
+            credential_key="combined-key:combined-secret",
+            output_dir=tmp_path,
+        )
+        captured = {}
+
+        def fake_subscribe(model, arguments):
+            import os
+
+            captured["credential_key"] = os.environ.get("HF_KEY")
+            captured["api_key"] = os.environ.get("HF_API_KEY")
+            captured["api_secret"] = os.environ.get("HF_API_SECRET")
+            return {"images": [{"url": "https://example.com/image.png"}]}
+
+        monkeypatch.setattr(ClawfieldSkill, "_load_subscribe", staticmethod(lambda: fake_subscribe))
+        monkeypatch.setattr("clawfield.skill.download_image", lambda *args, **kwargs: Path(tmp_path / "image.png"))
+
+        skill.generate("test prompt")
+
+        assert captured == {
+            "credential_key": "combined-key:combined-secret",
+            "api_key": "combined-key",
+            "api_secret": "combined-secret",
+        }

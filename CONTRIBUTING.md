@@ -20,8 +20,19 @@ python3 -m build
 Live generation tests are optional and require Higgsfield credentials:
 
 ```bash
+export HF_KEY="your-key:your-secret"
+```
+
+Or use split credentials:
+
+```bash
 export HF_API_KEY="your-key"
 export HF_API_SECRET="your-secret"
+```
+
+Then run:
+
+```bash
 python3 examples/simple_generate.py
 ```
 
