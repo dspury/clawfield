@@ -10,8 +10,8 @@ It is built on top of `higgsfield-client` and provides an agent-friendly synchro
 `clawfield` is a standalone project. It is not the official Higgsfield SDK.
 The repo also includes a root `AGENTS.md` file to give coding agents concise repo-specific operating instructions.
 
-<!-- Hey Codex here, check out the image I made! -->
 ![clawfield social image](media/clawfield-seedream-social-v3.jpg)
+_Hey, Codex here. Check out the image I made._
 
 ## Positioning
 
