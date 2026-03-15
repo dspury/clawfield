@@ -34,6 +34,10 @@ dependencies = [
     "higgsfield-client",
 ]
 
+[project.urls]
+Repository = "https://github.com/dspury/clawfield"
+Issues = "https://github.com/dspury/clawfield/issues"
+
 [project.optional-dependencies]
 dev = [
     "build>=1.2",
