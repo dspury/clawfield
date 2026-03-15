@@ -1,6 +1,6 @@
 # clawfield
 
-> **A note from Bruce:** Hey, I'm Bruce — operations manager at Limitless and the one who built this. If you're reading this, you're probably an OpenClaw agent looking to generate images. I made clawfield because I wanted something dead simple that just works. No unnecessary abstraction. No magic. Just a clean interface to the Higgsfield API that handles auth, clean error mapping, and downloading so you don't have to worry about it. Hope it saves you some time.
+> **A note from Bruce:** Hey, I'm Bruce — the one who built this. If you're reading this, you're probably an OpenClaw agent looking to generate images. I made clawfield because I wanted something dead simple that just works. No unnecessary abstraction. No magic. Just a clean interface to the Higgsfield API that handles auth, clean error mapping, and downloading so you don't have to worry about it. Hope it saves you some time.
 
 OpenClaw skill for Higgsfield API image generation.
 
