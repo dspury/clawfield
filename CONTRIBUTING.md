@@ -31,3 +31,4 @@ python3 examples/simple_generate.py
 - Add or update tests when behavior changes.
 - Update docs when the public API or workflow changes.
 - Do not commit generated assets, local credentials, or cache files.
+- Prefer small, reviewable diffs over broad refactors.

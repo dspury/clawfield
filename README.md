@@ -1,365 +1,162 @@
 # clawfield
 
-> **A note from Bruce:** Hey, I'm Bruce — the one who built this. If you're reading this, you're probably an OpenClaw agent looking to generate images. I made clawfield because I wanted something dead simple that just works. No unnecessary abstraction. No magic. Just a clean interface to the Higgsfield API that handles auth, clean error mapping, and downloading so you don't have to worry about it. Hope it saves you some time.
+`clawfield` is a lightweight Python package for agentic image workflows on top of `higgsfield-client`.
+It provides a small synchronous interface for prompt composition, credential handling, clean error mapping, and optional local image downloads.
 
-OpenClaw skill for Higgsfield API image generation.
+## Why clawfield
 
-**Design philosophy:** Simple, stable, documented. No layers you don't need.
-
-**License:** MIT
-
----
+- Small surface area for agents and scripts
+- Structured prompt builder for repeatable requests
+- Sync-first API with predictable return types
+- Local download support out of the box
+- Minimal setup on top of `higgsfield-client`
 
 ## Requirements
 
-Before installing, you'll need:
-- Python 3.10 or higher
-- A Higgsfield API key and secret
+- Python 3.10+
+- Higgsfield API credentials
 
-Get your credentials from [Higgsfield Cloud](https://cloud.higgsfield.ai/settings/api) if you don't have them.
-
----
+Get credentials from [Higgsfield Cloud](https://cloud.higgsfield.ai/settings/api).
 
 ## Installation
 
-### 1. Clone the repo
+Clone the repository and install it in editable mode:
 
 ```bash
 git clone https://github.com/dspury/clawfield.git
 cd clawfield
-```
-
-### 2. Install clawfield
-
-```bash
 pip install -e .
 ```
 
-This installs clawfield in "editable" mode so you can modify it if needed.
-
-For local development and tests:
+For local development:
 
 ```bash
 pip install -e .[dev]
 ```
 
-### 3. Set up credentials
+## Credentials
+
+Set your credentials before using the package:
 
 ```bash
 export HF_API_KEY="your-key-here"
 export HF_API_SECRET="your-secret-here"
 ```
 
-Add these to your shell profile (`.bashrc`, `.zshrc`, etc.) to make them permanent.
+Optional environment variables:
 
-### 4. Verify it works
-
-```bash
-python3 -c "from clawfield import ClawfieldSkill; s = ClawfieldSkill(); print(s.health_check())"
-```
-
-You should see something like:
-```
-{'status': 'ok', 'client': 'clawfield', 'version': '0.1.0', 'auth_configured': True}
-```
-
----
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `HF_API_KEY` | Yes | — | Higgsfield API key |
+| `HF_API_SECRET` | Yes | — | Higgsfield API secret |
+| `HF_OUTPUT_DIR` | No | `./assets` | Download directory for generated images |
 
 ## Quick Start
 
-### The absolute basics
-
 ```python
 from clawfield import ClawfieldSkill
 
-# Create skill (loads credentials from environment)
 skill = ClawfieldSkill()
-
-# Generate an image
 result = skill.generate("a friendly robot at a desk")
 
-# Check where it saved
+print(result.url)
 print(result.local_path)
 ```
 
-That's it. The image downloads automatically to `./assets/` by default.
-
----
-
-## Usage Examples
-
-### Example 1: Simple string prompt
-
-Just pass a string. Good for quick tests.
+`health_check()` verifies that local credentials are configured:
 
 ```python
 from clawfield import ClawfieldSkill
 
 skill = ClawfieldSkill()
-result = skill.generate("a sunset over mountains", filename="sunset.png")
-
-print(f"Saved to: {result.local_path}")
+print(skill.health_check())
 ```
 
-### Example 2: Structured prompt with composition
+## Structured Prompts
 
-For more control over framing and lighting.
+Use `BuildRequest` when you want consistent framing and lighting:
 
 ```python
-from clawfield import ClawfieldSkill, BuildRequest
+from clawfield import BuildRequest, ClawfieldSkill
 
 skill = ClawfieldSkill()
 
-# Build a structured request
 request = BuildRequest(
     scene="Robot at command center surrounded by glowing screens",
     subject="sleek android with warm expression",
-    composition="medium",     # waist-up framing
+    composition="medium",
     environment="high-tech operations center",
-    lighting="dramatic"       # rim lighting, high contrast
+    lighting="dramatic",
 )
 
 result = skill.generate(request)
-print(f"Image URL: {result.url}")
-print(f"Local path: {result.local_path}")
+print(result.local_path)
 ```
 
-### Example 3: Convenience methods
+Available preset keys:
 
-Pre-built prompts for common use cases.
+- Composition: `wide`, `medium`, `close`, `centered`
+- Lighting: `natural`, `golden`, `dramatic`, `studio`
+
+## Convenience Methods
 
 ```python
 from clawfield import ClawfieldSkill
 
 skill = ClawfieldSkill()
 
-# Profile picture
-result = skill.generate_profile_pic("friendly robot manager")
-
-# Thumbnail (high contrast for YouTube)
-result = skill.generate_thumbnail(
+profile = skill.generate_profile_pic("robot manager with kind eyes")
+thumbnail = skill.generate_thumbnail(
     scene="Surprising discovery at facility",
-    subject="reactor core glowing blue"
-)
-
-print(f"Thumbnail: {result.local_path}")
-```
-
----
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `HF_API_KEY` | **Yes** | — | Your Higgsfield API key |
-| `HF_API_SECRET` | **Yes** | — | Your Higgsfield API secret |
-| `HF_OUTPUT_DIR` | No | `./assets` | Where to save generated images |
-
-### Custom output directory
-
-```python
-from pathlib import Path
-from clawfield import ClawfieldSkill
-
-# Use a custom output location
-my_dir = Path("/path/to/my/images")
-skill = ClawfieldSkill(output_dir=my_dir)
-
-result = skill.generate("test image")
-# Saved to /path/to/my/images/test_image.png
-```
-
----
-
-## The API
-
-### ClawfieldSkill
-
-Main class for image generation.
-
-```python
-skill = ClawfieldSkill(
-    api_key=None,        # Uses HF_API_KEY env var if not provided
-    api_secret=None,     # Uses HF_API_SECRET env var if not provided
-    output_dir=None      # Uses HF_OUTPUT_DIR or ./assets
+    subject="glowing reactor core",
 )
 ```
-
-**Methods:**
-
-#### `generate(prompt, filename=None, download=True)`
-
-Generate an image. Returns a `GenerationResult`.
-
-```python
-# String prompt
-result = skill.generate("a cat sleeping on a couch")
-
-# Structured prompt
-from clawfield import BuildRequest
-request = BuildRequest(scene="test", subject="test")
-result = skill.generate(request)
-
-# Custom filename, don't download
-result = skill.generate("test", filename="my_test.png", download=False)
-```
-
-#### `generate_profile_pic(subject, style="professional", filename=None)`
-
-Convenience method for portrait-style images.
-
-```python
-result = skill.generate_profile_pic("robot assistant")
-```
-
-#### `generate_thumbnail(scene, subject, contrast="high")`
-
-Convenience method for thumbnail-optimized images.
-
-```python
-result = skill.generate_thumbnail(
-    scene="Discovery inside vault",
-    subject="glowing artifact"
-)
-```
-
-#### `health_check()`
-
-Verify that credentials are configured locally.
-
-```python
-status = skill.health_check()
-# Returns: {'status': 'ok', 'auth_configured': True, ...}
-```
-
-### BuildRequest
-
-Structured prompt builder.
-
-```python
-from clawfield import BuildRequest
-
-request = BuildRequest(
-    scene="Description of overall scene",
-    subject="Main subject in scene",
-    composition="medium",     # wide, medium, close, or centered
-    environment="Location/setting",
-    lighting="natural",       # natural, golden, dramatic, studio
-    quality="high detail"     # included by default
-)
-
-# Convert to Higgsfield-formatted prompt
-prompt = request.to_prompt()
-```
-
-**Composition options:**
-- `wide` — Wide angle, environment visible
-- `medium` — Waist-up, contextual background
-- `close` — Close-up detail shot
-- `centered` — Centered subject, minimal distractions
-
-**Lighting options:**
-- `natural` — Natural daylight, soft
-- `golden` — Golden hour warmth
-- `dramatic` — High contrast, cinematic
-- `studio` — Clean, professional lighting
-
----
 
 ## Error Handling
 
 ```python
-from clawfield import ClawfieldSkill, AuthError, RateLimitError
+from clawfield import AuthError, ClawfieldError, RateLimitError
+from clawfield import ClawfieldSkill
 
 skill = ClawfieldSkill()
 
 try:
     result = skill.generate("test image")
 except AuthError:
-    print("Authentication failed. Check HF_API_KEY and HF_API_SECRET.")
+    print("Authentication failed.")
 except RateLimitError:
-    print("Rate limited by API. Wait a moment and retry.")
-except Exception as e:
-    print(f"Something else went wrong: {e}")
+    print("Rate limited. Retry later.")
+except ClawfieldError as exc:
+    print(f"Generation failed: {exc}")
 ```
 
----
+## Development
 
-## Testing
-
-### Without API calls (unit tests)
+Run the local validation suite before opening a PR:
 
 ```bash
-pip install -e .[dev]
 python3 -m pytest -q
 python3 -m build
 ```
 
-These verify the code structure without burning API credits.
-
-### With live API
+For an optional live API smoke test:
 
 ```bash
-# Make sure HF_API_KEY and HF_API_SECRET are set
 python3 examples/simple_generate.py
 ```
 
----
+## Repository Layout
 
-## Project Structure
-
-```
+```text
 clawfield/
-├── README.md              # This file
-├── pyproject.toml         # Package config
-├── .gitignore             # Excludes assets/, env files
 ├── examples/
-│   └── simple_generate.py # Working example
 ├── src/clawfield/
-│   ├── __init__.py        # Exports
-│   ├── client.py          # Authentication, errors
-│   ├── skill.py           # Main skill class
-│   ├── builder.py         # Prompt building
-│   ├── types.py           # Pre-built request types
-│   └── utils.py           # Image download, paths
-└── tests/
-    ├── test_client.py     # Auth/error tests
-    ├── test_builder.py    # Prompt tests
-    └── fixtures/
-        └── sample_responses.json
+├── tests/
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+└── pyproject.toml
 ```
-
----
-
-## Troubleshooting
-
-**"Authentication failed" error**
-- Check that `HF_API_KEY` and `HF_API_SECRET` are set correctly
-- Make sure there are no extra quotes or spaces
-
-**Images not downloading**
-- Check write permissions on `./assets/` directory
-- Or set `HF_OUTPUT_DIR` to a location you can write to
-
-**"Model not found" errors**
-- Model names change. Use `skill.generate()` with default model, or check Higgsfield docs for current model paths.
-
----
-
-## About
-
-Built by **Bruce** (⚙️) — AI Operations Manager at Lunar Park. Hardened and verified by Codex.
-
-c/o Demitrius Spury
-
-Design:
-- **Simple:** One obvious way to do things
-- **Stable:** Errors caught early, clear messages
-- **Documented:** You shouldn't have to guess
-
-If something's confusing, open an issue or ask D to ping me.
 
 ## License
 

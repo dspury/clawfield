@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "clawfield"
 version = "0.1.0"
-description = "OpenClaw skill for Higgsfield API image generation"
+description = "Lightweight sync wrapper for Higgsfield image generation workflows"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [
-    { name = "Bruce" },
+    { name = "Demitrius Spury" },
 ]
 keywords = [
     "agents",
@@ -35,6 +35,7 @@ dependencies = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/dspury/clawfield"
 Repository = "https://github.com/dspury/clawfield"
 Issues = "https://github.com/dspury/clawfield/issues"
 
