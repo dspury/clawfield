@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "clawfield"
 version = "0.1.0"
-description = "Lightweight sync wrapper for Higgsfield image generation workflows"
+description = "Agent-friendly sync wrapper for Higgsfield image generation workflows"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
